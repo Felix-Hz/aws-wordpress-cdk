@@ -11,8 +11,8 @@ export class InfraStack extends cdk.Stack {
     super(scope, id, props);
 
     // @TODO:
-    // - Do an architecture diagram
-    // - Add SSL certificate
+    // - Architecture diagram
+    // - SSL
 
     ///////
     // _   _____  _____
@@ -94,26 +94,24 @@ export class InfraStack extends cdk.Stack {
       vpc: vpc,
       vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
       securityGroup: ec2SecurityGroup,
-      // detailedMonitoring: true,
-      ssmSessionPermissions: true,
       keyPair: keyPairRef,
+      // detailedMonitoring: true,
+      // ssmSessionPermissions: true,
     });
 
     // Update packages, and install necessary utils
     ec2Instance.userData.addCommands(
-      "sudo yum check-update -y",
-      "sudo yum upgrade -y",
-      // Install Apache and PHP
-      "sudo yum install -y httpd php php-mysqlnd",
-      // Start Apache web server
-      "sudo systemctl start httpd",
-      // Ensure Apache starts on boot
-      "sudo systemctl enable httpd",
+      "sudo yum check-update -y && sudo yum upgrade -y",
+      "sudo yum install -y httpd gcc-c++ zlib-devel",
+      "sudo amazon-linux-extras enable php8.2 && sudo yum clean metadata",
+      "sudo yum install php php-cli php-pdo php-fpm php-json php-mysqlnd",
+      // Start Apache web server, and ensure it starts on boot
+      "sudo systemctl start httpd && sudo systemctl enable httpd",
       // WordPress setup
-      "cd /var/www/html",
-      "sudo wget https://wordpress.org/latest.tar.gz",
-      "sudo tar -xzvf latest.tar.gz",
-      "sudo chown -R apache:apache wordpress"
+      "cd /var/www/html && sudo wget https://wordpress.org/latest.tar.gz",
+      "sudo tar -xzvf latest.tar.gz && sudo mv wordpress/* .",
+      "sudo chown -R apache:apache /var/www/html",
+      "sudo rm latest.tar.gz && sudo rmdir wordpress"
     );
 
     ///////
@@ -124,7 +122,9 @@ export class InfraStack extends cdk.Stack {
     //
     ///////
 
+    // CDK Automatically creates root credentials with randomly generated secure safe password.
     const dbInstance = new rds.DatabaseInstance(this, "WpDatabase", {
+      databaseName: "wordpress_db",
       engine: rds.DatabaseInstanceEngine.MYSQL,
       vpc: vpc,
       vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
