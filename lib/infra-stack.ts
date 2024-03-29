@@ -76,15 +76,27 @@ export class InfraStack extends cdk.Stack {
     //
     ///////
 
+    const keyPairName = "aws-wordpress-cdk";
+    const keyPairRef = ec2.KeyPair.fromKeyPairName(
+      this,
+      "ssh-access-keypair",
+      keyPairName
+    );
+
     const ec2Instance = new ec2.Instance(this, "WpServer", {
       instanceType: ec2.InstanceType.of(
         ec2.InstanceClass.T3,
         ec2.InstanceSize.MICRO
       ),
-      machineImage: new ec2.AmazonLinuxImage(),
+      machineImage: new ec2.AmazonLinuxImage({
+        generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2,
+      }),
       vpc: vpc,
       vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
       securityGroup: ec2SecurityGroup,
+      // detailedMonitoring: true,
+      ssmSessionPermissions: true,
+      keyPair: keyPairRef,
     });
 
     // Update packages, and install necessary utils
@@ -135,45 +147,45 @@ export class InfraStack extends cdk.Stack {
     });
 
     s3Bucket.grantReadWrite(ec2Instance);
-
-    //////////////////////////////////////////////////////////////////////
-
-    // // CloudFront distribution for content delivery
-    // const cloudFrontDistribution = new cloudfront.CloudFrontWebDistribution(
-    //   this,
-    //   "CDNDistribution",
-    //   {
-    //     originConfigs: [
-    //       {
-    //         s3OriginSource: {
-    //           s3BucketSource: s3Bucket,
-    //         },
-    //         behaviors: [{ isDefaultBehavior: true }],
-    //       },
-    //     ],
-    //   }
-    // );
-
-    // // Elastic Load Balancer
-    // const loadBalancer = new elb.ApplicationLoadBalancer(this, "LoadBalancer", {
-    //   vpc: vpc,
-    //   internetFacing: true,
-    // });
-
-    // // Listener for Load Balancer
-    // const listener = loadBalancer.addListener("Listener", { port: 80 });
-
-    // // Target Group for Load Balancer
-    // const targetGroup = new elb.ApplicationTargetGroup(this, "TargetGroup", {
-    //   vpc: vpc,
-    //   port: 80,
-    //   targetType: elb.TargetType.INSTANCE,
-    //   targets: [ec2Instance],
-    // });
-
-    // // Add Target Group to Listener
-    // listener.addTargetGroups("DefaultTargetGroup", {
-    //   targetGroups: [targetGroup],
-    // });
   }
 }
+
+//////////////////////////////////////////////////////////////////////
+
+// // CloudFront distribution for content delivery
+// const cloudFrontDistribution = new cloudfront.CloudFrontWebDistribution(
+//   this,
+//   "CDNDistribution",
+//   {
+//     originConfigs: [
+//       {
+//         s3OriginSource: {
+//           s3BucketSource: s3Bucket,
+//         },
+//         behaviors: [{ isDefaultBehavior: true }],
+//       },
+//     ],
+//   }
+// );
+
+// // Elastic Load Balancer
+// const loadBalancer = new elb.ApplicationLoadBalancer(this, "LoadBalancer", {
+//   vpc: vpc,
+//   internetFacing: true,
+// });
+
+// // Listener for Load Balancer
+// const listener = loadBalancer.addListener("Listener", { port: 80 });
+
+// // Target Group for Load Balancer
+// const targetGroup = new elb.ApplicationTargetGroup(this, "TargetGroup", {
+//   vpc: vpc,
+//   port: 80,
+//   targetType: elb.TargetType.INSTANCE,
+//   targets: [ec2Instance],
+// });
+
+// // Add Target Group to Listener
+// listener.addTargetGroups("DefaultTargetGroup", {
+//   targetGroups: [targetGroup],
+// });
