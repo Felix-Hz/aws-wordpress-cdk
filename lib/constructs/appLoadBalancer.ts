@@ -1,4 +1,5 @@
 import { Construct } from "constructs";
+import * as s3 from "aws-cdk-lib/aws-s3";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as autoscaling from "aws-cdk-lib/aws-autoscaling";
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
