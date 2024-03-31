@@ -8,6 +8,7 @@ import {
   customVpc,
   wpServerEC2,
   rdsInstance,
+  wpAppLoadBalancer,
 } from "./constructs";
 
 export class WpInfraStack extends cdk.Stack {
@@ -43,6 +44,13 @@ export class WpInfraStack extends cdk.Stack {
       `${config.projectName}-EC2`,
       vpc.vpc,
       securityGroup.ec2SecurityGroup
+    );
+
+    const appLoadBalancer = new wpAppLoadBalancer(
+      this,
+      `${config.projectName}-ALB`,
+      autoScalingGroupEC2.asg,
+      vpc.vpc
     );
 
     const db = new rdsInstance(this, `${config.projectName}-DB`, vpc.vpc);
