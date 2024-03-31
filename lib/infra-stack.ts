@@ -19,14 +19,8 @@ export class WpInfraStack extends cdk.Stack {
 
     /* @TODO:
      * - Architecture diagram
-     * - HTTPS/SSL
-     * - Stacks
-     * - See if S3 as a CDN or what.
-     *
-     * Stacks to be implemented:
-     * 1) Implement ASG
-     * 2) Implement Load Balancing
-     * 3) Store WordPress in an EFS
+     * - HTTPS/SSL certificate
+     * - S3 with CDN for heavy media assets
      */
 
     /* ============================================= *
@@ -43,19 +37,19 @@ export class WpInfraStack extends cdk.Stack {
       vpc.vpc
     );
 
-    const wpElasticFileSys = new wpFileSystem(
-      this,
-      `${config.projectName}-EFS`,
-      vpc.vpc
-    );
+    const db = new rdsInstance(this, `${config.projectName}-DB`, vpc.vpc);
+
+    // const wpElasticFileSys = new wpFileSystem(this,`${config.projectName}-EFS`, vpc.vpc);
 
     const autoScalingGroupEC2 = new wpServerASG(
       this,
       `${config.projectName}-ASG`,
       vpc.vpc,
       securityGroup.ec2SecurityGroup,
-      wpElasticFileSys.fileSystem
+      db.rdsInstance,
+      // wpElasticFileSys.fileSystem
     );
+    db.rdsInstance.connections.allowDefaultPortFrom(autoScalingGroupEC2.asg);
 
     const appLoadBalancer = new wpAppLoadBalancer(
       this,
@@ -64,15 +58,7 @@ export class WpInfraStack extends cdk.Stack {
       vpc.vpc
     );
 
-    const db = new rdsInstance(this, `${config.projectName}-DB`, vpc.vpc);
-
     const s3 = new s3Bucket(this, `${config.projectName}-S3`);
-
-    /* ============================== *
-     * SETTING NECESSARY PERMISSIONS. *
-     * ============================== */
-
-    db.rdsInstance.connections.allowDefaultPortFrom(autoScalingGroupEC2.asg);
     s3.s3Bucket.grantReadWrite(autoScalingGroupEC2.asg);
   }
 }

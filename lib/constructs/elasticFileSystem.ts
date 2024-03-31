@@ -9,7 +9,7 @@ export class wpFileSystem extends cdk.Stack {
   constructor(scope: Construct, id: string, vpc: ec2.IVpc) {
     super(scope, id);
 
-    this.fileSystem = new efs.FileSystem(this, "EfsFileSystem", {
+    this.fileSystem = new efs.FileSystem(this, "wpFileSystem", {
       vpc: vpc,
       lifecyclePolicy: efs.LifecyclePolicy.AFTER_7_DAYS,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
