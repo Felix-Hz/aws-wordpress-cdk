@@ -1,5 +1,6 @@
 import * as dotenv from "dotenv";
 import { Construct } from "constructs";
+import * as iam from "aws-cdk-lib/aws-iam";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as rds from "aws-cdk-lib/aws-rds";
 import * as efs from "aws-cdk-lib/aws-efs";
@@ -32,6 +33,26 @@ export class wpServerASG extends Construct {
     // Create KeyPair to SSH into the machine.
     const keyPairName = "aws-wordpress-cdk";
     const keyPairRef = new ec2.KeyPair(this, keyPairName);
+
+    /* ===================== *
+     *    IAM SERVER ROLE    *
+     *====================== */
+
+    const ec2Role = new iam.Role(this, "wpEC2Role", {
+      assumedBy: new iam.ServicePrincipal("ec2.amazonaws.com"),
+    });
+
+    const secretAccessPolicy = new iam.Policy(this, "SecretAccessPolicy", {
+      statements: [
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ["secretsmanager:GetSecretValue"],
+          resources: ["arn:aws:secretsmanager:*:*:secret:*"],
+        }),
+      ],
+    });
+
+    ec2Role.attachInlinePolicy(secretAccessPolicy);
 
     /* ===================== *
      *    WORDPRESS SETUP    *
@@ -96,6 +117,7 @@ export class wpServerASG extends Construct {
       minCapacity: 2,
       desiredCapacity: 2,
       maxCapacity: 4,
+      role: ec2Role,
       userData: userData,
     });
   }
