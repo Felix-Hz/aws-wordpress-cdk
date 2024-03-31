@@ -15,6 +15,10 @@ import { Construct } from "constructs";
 export class s3Bucket extends Construct {
   public readonly s3Bucket: s3.Bucket;
 
+  /*
+  *   Store media assets to be delivered as CDN. Needs to be configured with a plugin.  
+  */
+
   constructor(scope: Construct, id: string) {
     super(scope, id);
 

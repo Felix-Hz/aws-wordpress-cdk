@@ -8,6 +8,7 @@ import {
   customVpc,
   rdsInstance,
   wpServerASG,
+  wpFileSystem,
   wpAppLoadBalancer,
   // wpServerEC2,
 } from "./constructs";
@@ -42,11 +43,18 @@ export class WpInfraStack extends cdk.Stack {
       vpc.vpc
     );
 
+    const wpElasticFileSys = new wpFileSystem(
+      this,
+      `${config.projectName}-EFS`,
+      vpc.vpc
+    );
+
     const autoScalingGroupEC2 = new wpServerASG(
       this,
       `${config.projectName}-ASG`,
       vpc.vpc,
-      securityGroup.ec2SecurityGroup
+      securityGroup.ec2SecurityGroup,
+      wpElasticFileSys.fileSystem
     );
 
     const appLoadBalancer = new wpAppLoadBalancer(

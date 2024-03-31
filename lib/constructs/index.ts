@@ -5,3 +5,4 @@ export * from "./rds";
 export * from "./securityGroup";
 export * from "./appLoadBalancer";
 export * from "./autoScalingGroup";
+export * from "./elasticFileSystem";

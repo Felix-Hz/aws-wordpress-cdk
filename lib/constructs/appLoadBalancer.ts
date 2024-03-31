@@ -45,5 +45,11 @@ export class wpAppLoadBalancer extends Construct {
     listener.addTargetGroups("TargetGroup", {
       targetGroups: [targetGroup],
     });
+
+    // this.alb.logAccessLogs(
+    //   new s3.Bucket(this, "s3loggingbucket", {
+    //     bucketName: "",
+    //   })
+    // );
   }
 }
