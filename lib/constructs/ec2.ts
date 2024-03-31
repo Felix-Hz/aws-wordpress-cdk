@@ -20,13 +20,11 @@ export class wpServerEC2 extends Construct {
   ) {
     super(scope, id);
 
+    // Create KeyPair to SSH into the machine.
     const keyPairName = "aws-wordpress-cdk";
-    const keyPairRef = ec2.KeyPair.fromKeyPairName(
-      this,
-      "ssh-access-keypair",
-      keyPairName
-    );
+    const keyPairRef = new ec2.KeyPair(this, keyPairName);
 
+    // @TODO: Add ASG.
     this.ec2Instance = new ec2.Instance(this, "WpServer", {
       instanceType: ec2.InstanceType.of(
         ec2.InstanceClass.T3,
@@ -38,9 +36,13 @@ export class wpServerEC2 extends Construct {
       vpc: vpc,
       vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
       securityGroup: securityGroup,
-      keyName: keyPairName,
+      keyName: keyPairRef.keyPairName,
       detailedMonitoring: true,
     });
+
+    /* ============================================= *
+     *    SERVER PROVISIONING & WORDPRESS SETUP.     *
+     * ============================================= */
 
     this.ec2Instance.addUserData(
       "sudo yum check-update -y && sudo yum upgrade -y",
