@@ -1,7 +1,12 @@
+import * as dotenv from "dotenv";
 import { Construct } from "constructs";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as rds from "aws-cdk-lib/aws-rds";
 import * as efs from "aws-cdk-lib/aws-efs";
 import * as autoscaling from "aws-cdk-lib/aws-autoscaling";
+import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
+
+dotenv.config();
 
 ///////
 // ___  __  ____________      ____________   __   ____    _____
@@ -19,31 +24,63 @@ export class wpServerASG extends Construct {
     id: string,
     vpc: ec2.IVpc,
     securityGroup: ec2.ISecurityGroup,
-    efsFileSystem: efs.FileSystem
+    dbInstance: rds.DatabaseInstance
+    // efsFileSystem: efs.FileSystem
   ) {
     super(scope, id);
-
-    // @TODO: Launch from customized template. Read secret manager for credentials, and inject them via userData.
 
     // Create KeyPair to SSH into the machine.
     const keyPairName = "aws-wordpress-cdk";
     const keyPairRef = new ec2.KeyPair(this, keyPairName);
 
+    /* ===================== *
+     *    WORDPRESS SETUP    *
+     *====================== */
+
+    // @TODO: Add these to the AWS Secret Manager.
+    const DB_NAME = "wordpress_db";
+    const AUTH_KEY = process.env.AUTH_KEY || "";
+    const SECURE_AUTH_KEY = process.env.SECURE_AUTH_KEY || "";
+    const LOGGED_IN_KEY = process.env.LOGGED_IN_KEY || "";
+    const NONCE_KEY = process.env.NONCE_KEY || "";
+    const AUTH_SALT = process.env.AUTH_SALT || "";
+    const SECURE_AUTH_SALT = process.env.SECURE_AUTH_SALT || "";
+    const LOGGED_IN_SALT = process.env.LOGGED_IN_SALT || "";
+    const NONCE_SALT = process.env.NONCE_SALT || "";
+
+    const userData = ec2.UserData.forLinux();
+    // userData.addCommands("sudo yum install -y amazon-efs-utils", `sudo mkdir -p /mnt/efs`, `sudo mount -t efs ${efsFileSystem.fileSystemId}:/uploads /var/www/html/wp-content/uploads`);
+    const dbCredentialsSecret = secretsmanager.Secret.fromSecretNameV2(
+      this,
+      "WpAdminSecret",
+      "wp-db-user"
+    );
+    /*
+     *  Values required for the wp-config.php file.
+     */
+    userData.addCommands(
+      `export DB_NAME="${DB_NAME}"`,
+      `export DB_USER="$(aws secretsmanager get-secret-value --secret-id ${dbCredentialsSecret.secretArn} --query 'SecretString.Username' --output text)"`,
+      `export DB_PASSWORD="$(aws secretsmanager get-secret-value --secret-id ${dbCredentialsSecret.secretArn} --query 'SecretString.Password' --output text)"`,
+      `export DB_HOST="${dbInstance.dbInstanceEndpointAddress}"`,
+      `export AUTH_KEY="${AUTH_KEY}"`,
+      `export SECURE_AUTH_KEY="${SECURE_AUTH_KEY}"`,
+      `export LOGGED_IN_KEY="${LOGGED_IN_KEY}"`,
+      `export NONCE_KEY="${NONCE_KEY}"`,
+      `export AUTH_SALT="${AUTH_SALT}"`,
+      `export SECURE_AUTH_SALT="${SECURE_AUTH_SALT}"`,
+      `export LOGGED_IN_SALT="${LOGGED_IN_SALT}"`,
+      `export NONCE_SALT="${NONCE_SALT}"`
+    );
+
+    /* ====================== *
+     *   SERVER PROVISIONING  *
+     * ====================== */
+
     // Use the Custom WordPress AMI.
     const wordpressCustomAMI = ec2.MachineImage.genericLinux({
       "ap-southeast-2": "ami-07990b97b8c7d4b61",
     });
-
-    /* ============================================= *
-     *    SERVER PROVISIONING & WORDPRESS SETUP.     *
-     * ============================================= */
-
-    const userData = ec2.UserData.forLinux();
-    userData.addCommands(
-      "yum install -y amazon-efs-utils",
-      `mkdir -p /mnt/efs`,
-      `mount -t efs ${efsFileSystem.fileSystemId}:/uploads /var/www/html/wp-content/uploads`
-    );
 
     this.asg = new autoscaling.AutoScalingGroup(this, "WpServerASG", {
       autoScalingGroupName: "WpServerASG",
