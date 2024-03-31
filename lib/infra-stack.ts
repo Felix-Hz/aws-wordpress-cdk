@@ -6,9 +6,10 @@ import {
   s3Bucket,
   customSG,
   customVpc,
-  wpServerEC2,
   rdsInstance,
+  wpServerASG,
   wpAppLoadBalancer,
+  // wpServerEC2,
 } from "./constructs";
 
 export class WpInfraStack extends cdk.Stack {
@@ -31,6 +32,8 @@ export class WpInfraStack extends cdk.Stack {
      * PROVISIONING STACK FOR WORDPRESS APPLICATION. *
      * ============================================= */
 
+    // const ec2 = new wpServerEC2(this, `${config.projectName}-EC2`, vpc.vpc, securityGroup.ec2SecurityGroup);
+
     const vpc = new customVpc(this, `${config.projectName}-VPC`);
 
     const securityGroup = new customSG(
@@ -39,9 +42,9 @@ export class WpInfraStack extends cdk.Stack {
       vpc.vpc
     );
 
-    const ec2 = new wpServerEC2(
+    const autoScalingGroupEC2 = new wpServerASG(
       this,
-      `${config.projectName}-EC2`,
+      `${config.projectName}-ASG`,
       vpc.vpc,
       securityGroup.ec2SecurityGroup
     );
@@ -61,7 +64,7 @@ export class WpInfraStack extends cdk.Stack {
      * SETTING NECESSARY PERMISSIONS. *
      * ============================== */
 
-    db.rdsInstance.connections.allowDefaultPortFrom(ec2.ec2Instance);
-    s3.s3Bucket.grantReadWrite(ec2.ec2Instance);
+    db.rdsInstance.connections.allowDefaultPortFrom(autoScalingGroupEC2.asg);
+    s3.s3Bucket.grantReadWrite(autoScalingGroupEC2.asg);
   }
 }
