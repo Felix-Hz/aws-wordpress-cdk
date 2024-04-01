@@ -31,9 +31,15 @@ export class WpInfraStack extends cdk.Stack {
 
     const vpc = new customVpc(this, `${config.projectName}-VPC`);
 
-    const securityGroup = new customSG(
+    const securityGroupASG = new autoScalingGroupSG(
       this,
-      `${config.projectName}-SG`,
+      `${config.projectName}-SG-ASG`,
+      vpc.vpc
+    );
+
+    const securityGroupELB = new loadBalancerSG(
+      this,
+      `${config.projectName}-SG-ELB`,
       vpc.vpc
     );
 
@@ -45,8 +51,8 @@ export class WpInfraStack extends cdk.Stack {
       this,
       `${config.projectName}-ASG`,
       vpc.vpc,
-      securityGroup.ec2SecurityGroup,
-      db.rdsInstance,
+      securityGroupASG.ec2SecurityGroup
+      // db.rdsInstance
       // wpElasticFileSys.fileSystem
     );
     db.rdsInstance.connections.allowDefaultPortFrom(autoScalingGroupEC2.asg);
@@ -55,7 +61,8 @@ export class WpInfraStack extends cdk.Stack {
       this,
       `${config.projectName}-ALB`,
       autoScalingGroupEC2.asg,
-      vpc.vpc
+      vpc.vpc,
+      securityGroupELB.ec2SecurityGroup
     );
 
     const s3 = new s3Bucket(this, `${config.projectName}-S3`);
