@@ -24,8 +24,8 @@ export class wpServerASG extends Construct {
     scope: Construct,
     id: string,
     vpc: ec2.IVpc,
-    securityGroup: ec2.ISecurityGroup,
-    dbInstance: rds.DatabaseInstance
+    securityGroup: ec2.ISecurityGroup
+    // dbInstance: rds.DatabaseInstance
     // efsFileSystem: efs.FileSystem
   ) {
     super(scope, id);
@@ -69,13 +69,16 @@ export class wpServerASG extends Construct {
     userData.addCommands(
       "sudo yum check-update -y && sudo yum upgrade -y",
       "sudo yum install -y httpd gcc-c++ zlib-devel",
-      "sudo amazon-linux-extras enable php8.2 && sudo yum clean metadata",
+      "sudo amazon-linux-extras enable php8.2",
+      "sudo yum clean metadata",
       "sudo yum install php php-cli php-pdo php-fpm php-json php-mysqlnd",
-      "sudo systemctl start httpd && sudo systemctl enable httpd",
+      "sudo systemctl enable httpd",
       "cd /var/www/html && sudo wget https://wordpress.org/latest.tar.gz",
       "sudo tar -xzvf latest.tar.gz && sudo mv wordpress/* .",
       "sudo chown -R apache:apache /var/www/html",
-      "sudo rm latest.tar.gz && sudo rmdir wordpress"
+      "sudo rm latest.tar.gz && sudo rmdir wordpress",
+      'echo "<h1>Hello World from $(hostname -f)</h1>" > /var/www/html/index.html',
+      "sudo systemctl start httpd"
     );
 
     /* ====================== *
@@ -91,60 +94,23 @@ export class wpServerASG extends Construct {
       ec2.InstanceSize.MICRO
     );
 
+    // @TODO: Spin ASG from custom AMI.
+    // const machineImage = ec2.MachineImage.genericLinux({[AMI_REGION]: AMI_ID,});
+
     this.asg = new autoscaling.AutoScalingGroup(this, "WpServerASG", {
-      autoScalingGroupName: "WpServerASG",
+      vpc: vpc,
       machineImage,
       instanceType,
-      vpc: vpc,
-      vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
+      role: ec2Role,
+      minCapacity: 1,
+      maxCapacity: 2,
+      desiredCapacity: 1,
+      userData: userData,
       securityGroup: securityGroup,
       keyName: keyPairRef.keyPairName,
-      minCapacity: 2,
-      desiredCapacity: 2,
-      maxCapacity: 4,
-      role: ec2Role,
-      userData: userData,
+      autoScalingGroupName: "WpServerASG",
+      healthCheck: autoscaling.HealthCheck.ec2(),
+      vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
     });
-
-    /*
-     * =============================================
-     *  Values required for the wp-config.php file.
-     * =============================================
-     
-        @TODO: 
-        - Create a custom AMI with the final WordPress application +plugins.
-
-        =============================================
-
-        const AMI_ID = process.env.AMI_ID || "No AMI assigned";
-        const AMI_REGION = process.env.REGION || "No REGION assigned";
-        const machineImage = ec2.MachineImage.genericLinux({[AMI_REGION]: AMI_ID,});
-
-        userData.addCommands(
-        `export DB_NAME="${DB_NAME}"`,
-        `export DB_USER="$(aws secretsmanager get-secret-value --secret-id ${dbCredentialsSecret.secretArn} --query 'SecretString.Username' --output text)"`,
-        `export DB_PASSWORD="$(aws secretsmanager get-secret-value --secret-id ${dbCredentialsSecret.secretArn} --query 'SecretString.Password' --output text)"`,
-        `export DB_HOST="${dbInstance.dbInstanceEndpointAddress}"`,
-        `export AUTH_KEY="${AUTH_KEY}"`,
-        `export SECURE_AUTH_KEY="${SECURE_AUTH_KEY}"`,
-        `export LOGGED_IN_KEY="${LOGGED_IN_KEY}"`,
-        `export NONCE_KEY="${NONCE_KEY}"`,
-        `export AUTH_SALT="${AUTH_SALT}"`,
-        `export SECURE_AUTH_SALT="${SECURE_AUTH_SALT}"`,
-        `export LOGGED_IN_SALT="${LOGGED_IN_SALT}"`,
-        `export NONCE_SALT="${NONCE_SALT}"`
-        );
-     */
-
-    // @TODO: Add these to the AWS Secret Manager.
-    const DB_NAME = "wordpress_db";
-    const AUTH_KEY = process.env.AUTH_KEY || "";
-    const SECURE_AUTH_KEY = process.env.SECURE_AUTH_KEY || "";
-    const LOGGED_IN_KEY = process.env.LOGGED_IN_KEY || "";
-    const NONCE_KEY = process.env.NONCE_KEY || "";
-    const AUTH_SALT = process.env.AUTH_SALT || "";
-    const SECURE_AUTH_SALT = process.env.SECURE_AUTH_SALT || "";
-    const LOGGED_IN_SALT = process.env.LOGGED_IN_SALT || "";
-    const NONCE_SALT = process.env.NONCE_SALT || "";
   }
 }
