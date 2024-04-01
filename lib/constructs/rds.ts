@@ -37,15 +37,23 @@ export class rdsInstance extends Construct {
     this.rdsInstance = new rds.DatabaseInstance(this, "WpDatabase", {
       databaseName: "wordpress_db",
       credentials: rds.Credentials.fromSecret(dbCredentialsSecret),
-      // @TODO: Change for an Aurora MySQL
+      // @TODO: Change for an Aurora MySQL fort vertical scaling.
       engine: rds.DatabaseInstanceEngine.MYSQL,
       vpc: vpc,
       vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
-      // This will destroy the data on stack deletion. Replace with SNAPSHOT
+      // This will destroy the data on stack deletion. Replace with SNAPSHOT for production. 
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       storageEncrypted: true,
+      // multiAz: true,
       // deletionProtection: true,
       // backupRetention: cdk.Duration.days(7),
     });
+
+    /*==================================================
+            MASTER-READ REPLICA OPTIMIZATION 
+      ================================================== 
+      const masterInstance = this.rdsInstance;
+      const dbReadReplica = new rds.DatabaseInstanceReadReplica(this,"replicaWpDatabase", {sourceDatabaseInstance: masterInstance, vpc, instanceType: ec2.InstanceType.of(ec2.InstanceClass.BURSTABLE2, ec2.InstanceSize.SMALL),});
+    */
   }
 }

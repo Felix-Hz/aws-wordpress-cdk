@@ -24,7 +24,6 @@ export class wpServerEC2 extends Construct {
     const keyPairName = "aws-wordpress-cdk";
     const keyPairRef = new ec2.KeyPair(this, keyPairName);
 
-    // @TODO: Add ASG.
     this.ec2Instance = new ec2.Instance(this, "WpServer", {
       instanceType: ec2.InstanceType.of(
         ec2.InstanceClass.T3,
