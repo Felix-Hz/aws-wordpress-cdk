@@ -26,6 +26,8 @@ export class wpAppLoadBalancer extends Construct {
     this.alb = new elbv2.ApplicationLoadBalancer(this, "wpAppLoadBalancer", {
       vpc,
       internetFacing: true,
+      securityGroup: customSG,
+      // vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
     });
 
     const listener = this.alb.addListener("HTTP-listener", {
