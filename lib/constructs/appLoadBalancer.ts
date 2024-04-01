@@ -1,8 +1,11 @@
+import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as logs from "aws-cdk-lib/aws-logs";
 import * as autoscaling from "aws-cdk-lib/aws-autoscaling";
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
+import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 
 ///////
 // ___   ___  ___    __   ____  ___   ___    ___
@@ -19,9 +22,14 @@ export class wpAppLoadBalancer extends Construct {
     scope: Construct,
     id: string,
     asg: autoscaling.AutoScalingGroup,
-    vpc: ec2.IVpc
+    vpc: ec2.IVpc,
+    customSG: ec2.ISecurityGroup
   ) {
     super(scope, id);
+
+    const accessLogsELB = new s3.Bucket(this, "accessLogsELB", {
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
 
     this.alb = new elbv2.ApplicationLoadBalancer(this, "wpAppLoadBalancer", {
       vpc,
@@ -42,6 +50,12 @@ export class wpAppLoadBalancer extends Construct {
         vpc,
         port: 80,
         targets: [asg],
+        healthCheck: {
+          enabled: true,
+          port: "traffic-port",
+          protocol: elbv2.Protocol.HTTP,
+          healthyHttpCodes: "200-399",
+        },
       }
     );
 
@@ -49,10 +63,20 @@ export class wpAppLoadBalancer extends Construct {
       targetGroups: [targetGroup],
     });
 
-    // this.alb.logAccessLogs(
-    //   new s3.Bucket(this, "s3loggingbucket", {
-    //     bucketName: "",
-    //   })
-    // );
+    // this.alb.logAccessLogs(accessLogsELB, "alb-access-logs/");
+
+    const wpUnhealthyHostsELB = new cloudwatch.Alarm(
+      this,
+      "wpUnhealthyHostsELB",
+      {
+        alarmDescription:
+          "Alarm if targetWpServerASG ALB has any unhealthy hosts.",
+        metric: targetGroup.metrics.unhealthyHostCount(),
+        threshold: 1,
+        evaluationPeriods: 1,
+        comparisonOperator:
+          cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      }
+    );
   }
 }
