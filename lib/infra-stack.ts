@@ -4,7 +4,8 @@ import { Construct } from "constructs";
 
 import {
   s3Bucket,
-  customSG,
+  autoScalingGroupSG,
+  loadBalancerSG,
   customVpc,
   rdsInstance,
   wpServerASG,
