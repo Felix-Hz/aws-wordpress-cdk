@@ -35,18 +35,27 @@ export class rdsInstance extends Construct {
     );
 
     this.rdsInstance = new rds.DatabaseInstance(this, "WpDatabase", {
+      /*  ========================
+            FOR PRODUCTION LOADS
+       *  ========================
+       * - ENGINE: Aurora MySQL for vertical scaling
+       * - INSTANCE TYPE: m5.large ,
+       * - MULTI-AZ:true
+       * - DELETION PROTECTION: true
+       * - BACKUP-RETENTION: 14 days
+       * - REMOVAL POLICY: Snapshot
+       */
       databaseName: "wordpress_db",
       credentials: rds.Credentials.fromSecret(dbCredentialsSecret),
-      // @TODO: Change for an Aurora MySQL fort vertical scaling.
       engine: rds.DatabaseInstanceEngine.MYSQL,
       vpc: vpc,
       vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
-      // This will destroy the data on stack deletion. Replace with SNAPSHOT for production. 
       removalPolicy: cdk.RemovalPolicy.DESTROY,
+      instanceType: ec2.InstanceType.of(
+        ec2.InstanceClass.T3,
+        ec2.InstanceSize.MICRO
+      ),
       storageEncrypted: true,
-      // multiAz: true,
-      // deletionProtection: true,
-      // backupRetention: cdk.Duration.days(7),
     });
 
     /*==================================================

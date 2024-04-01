@@ -4,31 +4,34 @@ import { Construct } from "constructs";
 
 import {
   s3Bucket,
-  autoScalingGroupSG,
-  loadBalancerSG,
   customVpc,
   rdsInstance,
   wpServerASG,
   wpFileSystem,
-  wpAppLoadBalancer,
+  loadBalancerSG,
   // wpServerEC2,
+  wpAppLoadBalancer,
+  autoScalingGroupSG,
 } from "./constructs";
+
+/* ====================================================== *
+ *                     @TO-DO LIST                        *
+ * ====================================================== *
+ * - CloudFront in front of the application load balancer.
+ * - Spin ASG from AMI template.
+ * - S3 with CDN for heavy media assets.
+ * - Mount Elastic File System to the servers.
+ * - HTTPS/SSL certificate.
+ * - Route 53 setup for domain.
+ * ====================================================== */
 
 export class WpInfraStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    /* @TODO:
-     * - Architecture diagram
-     * - HTTPS/SSL certificate
-     * - S3 with CDN for heavy media assets
-     */
-
     /* ============================================= *
      * PROVISIONING STACK FOR WORDPRESS APPLICATION. *
      * ============================================= */
-
-    // const ec2 = new wpServerEC2(this, `${config.projectName}-EC2`, vpc.vpc, securityGroup.ec2SecurityGroup);
 
     const vpc = new customVpc(this, `${config.projectName}-VPC`);
 
