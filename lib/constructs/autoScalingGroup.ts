@@ -58,13 +58,10 @@ export class wpServerASG extends Construct {
      *    WORDPRESS SETUP    *
      *====================== */
 
-    const userData = ec2.UserData.forLinux();
     // userData.addCommands("sudo yum install -y amazon-efs-utils", `sudo mkdir -p /mnt/efs`, `sudo mount -t efs ${efsFileSystem.fileSystemId}:/uploads /var/www/html/wp-content/uploads`);
-    const dbCredentialsSecret = secretsmanager.Secret.fromSecretNameV2(
-      this,
-      "WpAdminSecret",
-      "wp-db-user"
-    );
+    // const dbCredentialsSecret = secretsmanager.Secret.fromSecretNameV2(this,"WpAdminSecret","wp-db-user");
+
+    const userData = ec2.UserData.forLinux();
 
     userData.addCommands(
       "sudo yum check-update -y && sudo yum upgrade -y",
@@ -74,9 +71,11 @@ export class wpServerASG extends Construct {
       "sudo yum install php php-cli php-pdo php-fpm php-json php-mysqlnd",
       "sudo systemctl enable httpd",
       "cd /var/www/html && sudo wget https://wordpress.org/latest.tar.gz",
-      "sudo tar -xzvf latest.tar.gz && sudo mv wordpress/* .",
+      "sudo tar -xzvf latest.tar.gz",
+      "sudo mv wordpress/* .",
       "sudo chown -R apache:apache /var/www/html",
-      "sudo rm latest.tar.gz && sudo rmdir wordpress",
+      "sudo rm latest.tar.gz",
+      "sudo rmdir wordpress",
       'echo "<h1>Hello World from $(hostname -f)</h1>" > /var/www/html/index.html',
       "sudo systemctl start httpd"
     );
@@ -85,19 +84,27 @@ export class wpServerASG extends Construct {
      *   SERVER PROVISIONING  *
      * ====================== */
 
-    const machineImage = new ec2.AmazonLinuxImage({
-      generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2,
-    });
+    const REGION = process.env.REGION || "ap-southeast-2";
+    const AMI_ID = process.env.AMI_ID || "ami-03a4ba9dba0b6d470";
+
+    const machineImage = ec2.MachineImage.genericLinux({ [REGION]: AMI_ID });
+
+    // @NOTE: If you don't have the custom template, create a new instance to set it up.
+    // const machineImage = new ec2.AmazonLinuxImage({generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2,});
 
     const instanceType = ec2.InstanceType.of(
       ec2.InstanceClass.T2,
       ec2.InstanceSize.MICRO
     );
 
-    // @TODO: Spin ASG from custom AMI.
-    // const machineImage = ec2.MachineImage.genericLinux({[AMI_REGION]: AMI_ID,});
-
     this.asg = new autoscaling.AutoScalingGroup(this, "WpServerASG", {
+      /*  ========================
+            FOR PRODUCTION LOADS
+       *  ========================
+       * - INSTANCE: t3.medium or large depending on the requirements.
+       * - MIN CAPACITY: 2.
+       * - SUBNET: isolated, set up bastion and let the ELB access the instances. 
+       */
       vpc: vpc,
       machineImage,
       instanceType,
