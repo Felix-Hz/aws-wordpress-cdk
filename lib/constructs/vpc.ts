@@ -19,6 +19,7 @@ export class customVpc extends Construct {
     this.vpc = new ec2.Vpc(this, `WpNetwork`, {
       // 2 AZs for High Availability
       maxAzs: 2,
+      natGateways: 1,
       subnetConfiguration: [
         {
           subnetType: ec2.SubnetType.PUBLIC,
@@ -28,6 +29,11 @@ export class customVpc extends Construct {
         {
           subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
           name: "WpPrivateSubnet",
+          cidrMask: 24,
+        },
+        {
+          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+          name: "WpEgressPrivateSubnet",
           cidrMask: 24,
         },
       ],

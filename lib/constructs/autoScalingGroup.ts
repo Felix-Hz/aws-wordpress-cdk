@@ -99,13 +99,6 @@ export class wpServerASG extends Construct {
     );
 
     this.asg = new autoscaling.AutoScalingGroup(this, "WpServerASG", {
-      /*  ========================
-            FOR PRODUCTION LOADS
-       *  ========================
-       * - INSTANCE: t3.medium or large depending on the requirements.
-       * - MIN CAPACITY: 2.
-       * - SUBNET: isolated, set up bastion and let the ELB access the instances. 
-       */
       vpc: vpc,
       machineImage,
       instanceType,
@@ -118,8 +111,7 @@ export class wpServerASG extends Construct {
       keyName: keyPairRef.keyPairName,
       autoScalingGroupName: "WpServerASG",
       healthCheck: autoscaling.HealthCheck.ec2(),
-      // @TODO: Change to private subnet and expose only the load balancer.
-      vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
       instanceMonitoring: autoscaling.Monitoring.DETAILED,
     });
 
