@@ -1,4 +1,8 @@
-# Infrastructure as Code for a Content Management System on AWS ⚙️
+# Infrastructure-as-Code for a CMS on AWS ⚙️
+
+> I have used the free tiers as initial configurations to relieve costs, but documented the production stack settings on every service that needs it (ELB, ASG, RDS, S3).
+
+![Diagram_Infrastructure](https://github.com/Felix-Hz/aws-wordpress-cdk/assets/71148989/be284bdd-f0f2-4852-9a7a-dc2935216309)
 
 <details>
 <summary><strong>Detailed Services Configuration</strong></summary>
@@ -19,8 +23,6 @@ The custom VPC setup in this stack creates a Virtual Private Cloud (VPC) with tw
    - Allows all outbound traffic.
 
 #### Database
-
-**RDS Cluster**
 
 - Engine: Aurora MySQL
 - Instance type: M5.LARGE
@@ -59,24 +61,24 @@ This S3 bucket is created to store media assets to be delivered as a CDN. It's c
 <details>
 <summary><strong>Secure</strong></summary>
 
-My architecture is designed with security in mind. I utilize Virtual Private Cloud (VPC) to isolate resources, ensuring that only authorized traffic can access my infrastructure. Security groups are used to control inbound and outbound traffic at the network level. Additionally, I could employ AWS Web Application Firewall (WAF) to protect the site against common web exploits and attacks.
+My architecture is designed with security in mind. I utilize Virtual Private Cloud (VPC) to isolate resources, ensuring that only authorized traffic can access my infrastructure. Security groups are used to control inbound and outbound traffic at the network level. I could also employ AWS Web Application Firewall (WAF) to protect the site against common web exploits and attacks.
 
 </details>
 <details>
 <summary><strong>Performant</strong></summary>
 
-Elastic Compute Cloud (EC2) hosts the CMS app servers, deployed in Auto Scaling Groups to dynamically adjust capacity based on demand. Content Delivery Network (CDN) like CloudFront could accelerate the content delivery by caching static assets closer to end-users, reducing latency and improving load times.
+Elastic Compute Cloud (EC2) hosts the CMS app servers, deployed in Auto Scaling Groups to dynamically adjust capacity based on demand. Depending on customer requirements, a CDN like CloudFront could accelerate the content delivery by caching static assets closer to end-users, reducing latency and improving load times.
 
 </details>
 <details>
 <summary><strong>Scalable</strong></summary>
 
-My architecture is built to scale as the workload grows. Auto Scaling Groups allow to automatically add or remove EC2 instances based on demand, ensuring that the application can handle fluctuations of traffic without intervention. Additionally, I utilize Multi-AZ deployments for high availability, distributing my resources across multiple Availability Zones to increase fault tolerance.
+Auto Scaling Groups allow to automatically add or remove EC2 instances based on demand, ensuring that the application can handle fluctuations of traffic elegantly. Additionally, I utilize Multi-AZ deployments for high availability, distributing my resources across multiple Availability Zones to increase fault tolerance.
 
 </details>
 <details>
 <summary><strong>Cost-effective</strong></summary>
-I optimize costs by utilizing AWS services efficiently. For database storage, I utilize Amazon RDS, which offers cost-effective and scalable database solutions. Amazon S3 is used for storing static assets, providing durable and low-cost storage for my application. By leveraging managed services and pay-as-you-go pricing models, I can minimize infrastructure costs while still meeting my performance and scalability requirements.
+By leveraging managed services and pay-as-you-go pricing models, I can minimize infrastructure costs while still meeting my performance and scalability requirements.
 </details>
 
 ### References
@@ -89,7 +91,7 @@ I optimize costs by utilizing AWS services efficiently. For database storage, I 
 ### Harden the AWS account
 
 1. CloudTrail is set up to monitor AWS account activity, providing visibility into actions taken within the AWS environment.
-2. AWS Cost Anomaly Detection is enable to alarm when unusual billing happens.
+2. AWS Cost Anomaly Detection is enabled to alarm when unusual billing happens.
 3. AWS GuardDuty is enabled to detect unusual activity and potential security threats.
 4. Multi-Factor Authentication (MFA) is enable for user, preventing unauthorized access.
 5. Permissions and policies have to be configured following the Least Privilege principle.
