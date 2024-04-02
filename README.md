@@ -1,6 +1,10 @@
 # Infrastructure-as-Code for a CMS on AWS ⚙️
 
-> I have used the free tiers as initial configurations to relieve costs, but documented the production stack settings on every service that needs it (ELB, ASG, RDS, S3).
+<br>
+
+> The configurations are thought for a blog that has medium sized traffic that receives 500 visits a day, but allow scaling out and up.
+
+<br>
 
 ![Diagram_Infrastructure](https://github.com/Felix-Hz/aws-wordpress-cdk/assets/71148989/be284bdd-f0f2-4852-9a7a-dc2935216309)
 
@@ -25,7 +29,7 @@ The custom VPC setup in this stack creates a Virtual Private Cloud (VPC) with tw
 #### Database
 
 - Engine: Aurora MySQL
-- Instance type: M5.LARGE
+- Instance type: T3.MEDIUM/LARGE
 - Storage encrypted: true
 - Removal Policy: SNAPSHOT
 - Multi-AZ: true
@@ -45,14 +49,14 @@ The Auto Scaling Group provisions EC2 instances for the WordPress application.
 #### Application Load Balancer (ALB)
 
 - Internet facing
-- Listens on port 80 (HTTP) [⚠️ When domain is registered, issue a SSL certificate for the ALB to listen on Port 443 (HTTPS)]
-- Target group configured to use traffic port 80 for health checks.
+- Listens on port 80 (HTTP) [⚠️ Domain is registered but the SSL certificate is still pending validation. Then it will listen on Port 443 (HTTPS)]
+- Target group configured to use traffic port 80 for health checks. Same as above.
 - ALB logs access logs to an S3 bucket.
 - CloudWatch alarm set to trigger if any unhealthy hosts are detected in the target group.
 
 #### S3 Bucket
 
-This S3 bucket is created to store media assets to be delivered as a CDN. It's configured with a removal policy of SNAPSHOT.
+This S3 bucket is created to store media assets. If required, can be configured with a CDN.
 
 </details>
 
@@ -73,12 +77,12 @@ Elastic Compute Cloud (EC2) hosts the CMS app servers, deployed in Auto Scaling 
 <details>
 <summary><strong>Scalable</strong></summary>
 
-Auto Scaling Groups allow to automatically add or remove EC2 instances based on demand, ensuring that the application can handle fluctuations of traffic elegantly. Additionally, I utilize Multi-AZ deployments for high availability, distributing my resources across multiple Availability Zones to increase fault tolerance.
+Auto Scaling Groups allow to automatically add or remove EC2 instances based on demand, ensuring that the application can handle fluctuations of traffic elegantly. RDS Aurora has built-in Multi-AZ configuration, read-replica and scales up on demand. All of this also allows high availability to increase fault tolerance.
 
 </details>
 <details>
 <summary><strong>Cost-effective</strong></summary>
-By leveraging managed services and pay-as-you-go pricing models, I can minimize infrastructure costs while still meeting my performance and scalability requirements.
+By leveraging managed services and pay-as-you-go pricing models, I can minimize infrastructure costs while still meeting performance and scalability requirements.
 </details>
 
 ### References
@@ -93,25 +97,20 @@ By leveraging managed services and pay-as-you-go pricing models, I can minimize 
 1. CloudTrail is set up to monitor AWS account activity, providing visibility into actions taken within the AWS environment.
 2. AWS Cost Anomaly Detection is enabled to alarm when unusual billing happens.
 3. AWS GuardDuty is enabled to detect unusual activity and potential security threats.
-4. Multi-Factor Authentication (MFA) is enable for user, preventing unauthorized access.
-5. Permissions and policies have to be configured following the Least Privilege principle.
-6. Check Trusted Advisor regularly.
-7. Pending:
+4. AWS Security Hub is enable to receive security insights and correct potential misconfigurations.
+5. Multi-Factor Authentication (MFA) is enable for user, preventing unauthorized access.
+6. Permissions and policies have to be configured following the Least Privilege principle.
+7. Check Trusted Advisor regularly.
+8. Pending:
    - Set up AWS Budget to create alarms on thresholds.
    - MFA for Root user.
 
 ### Additional Notes
 
-- Once a domain is purchased and registered, SSL certificates can be issued through Certificate Authorities like Let's Encrypt or AWS Certificate Manager, enabling secure HTTPS communication. Update Load Balancer configurations to listen on Port 443 for HTTPS traffic.
-- I have used the free tiers as initial configurations, but documented the production stack settings on every service (ELB, ASG, RDS):
-  - RDS database is deployed without Multi-AZ and with optimized instance types to manage initial costs effectively.
-  - Aurora MySQL would be the ideal engine as it leverages vertical scaling.
-  - In my custom AMI, I would use a T3.MEDIUM or LARGE for the compute general-purpose instance of the hosting server.
-- A Slave-Master configuration for the database would offload the read requests to the read-replica, while keeping the masters computing power for the write requests.
-- In future iterations, separate server configuration and provisioning by using the custom AMI from WordPress core files by mounting the Elastic File System (EFS).
-- Resources are deployed in a Multi AZ configuration for high availability and fault tolerance.
-- CloudFront can be utilized to cache dynamic content and improve user experience for sites with high traffic.
-- CI/CD pipelines should be configured for automated deployments, with options for Blue/Green or Canary Deployment strategies to minimize downtime and risk.
-- AWS WAF can help prevent common attacks and can be customized to meet specific security requirements.
-- Fargate containers could provide a different option for deployment, offering flexibility and scalability without the need to manage underlying infrastructure.
+- I'm waiting for the SSL certificate validation to update the Load Balancer configuration and encrypt traffic.
 - While AWS LightSail offers ease of use, it may be more expensive and less customizable compared to setting up EC2 instances manually.
+- For future iterations:
+  - Separate server configuration and provisioning by using the custom AMI from WordPress core files by mounting the Elastic File System (EFS).
+  - CloudFront can be utilized to cache dynamic content and improve user experience for sites with high traffic.
+  - CI/CD pipelines should be configured for automated deployments with a deployment strategy such as Green/Blue.
+  - AWS WAF can help prevent common attacks and can be customized to meet specific security requirements.
