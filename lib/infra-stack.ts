@@ -1,6 +1,7 @@
 import { config } from "./config";
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
+import * as certificatemanager from "aws-cdk-lib/aws-certificatemanager";
 
 import {
   s3Bucket,
@@ -17,12 +18,10 @@ import {
 /* ====================================================== *
  *                     @TO-DO LIST                        *
  * ====================================================== *
- * - CloudFront in front of the application load balancer.
- * - Spin ASG from AMI template.
+ * - HTTPS/SSL certificate.
  * - S3 with CDN for heavy media assets.
  * - Mount Elastic File System to the servers.
- * - HTTPS/SSL certificate.
- * - Route 53 setup for domain.
+ * - CloudFront in front of the application load balancer.
  * ====================================================== */
 
 export class WpInfraStack extends cdk.Stack {
@@ -47,6 +46,12 @@ export class WpInfraStack extends cdk.Stack {
       vpc.vpc
     );
 
+    const sslCertificate = certificatemanager.Certificate.fromCertificateArn(
+      this,
+      `${config.projectName}-SSL`,
+      `${config.resources.sslCertificateArn}`
+    );
+
     const db = new auroraCluster(this, `${config.projectName}-DB`, vpc.vpc);
 
     // const wpElasticFileSys = new wpFileSystem(this,`${config.projectName}-EFS`, vpc.vpc);
@@ -67,7 +72,8 @@ export class WpInfraStack extends cdk.Stack {
       `${config.projectName}-ALB`,
       autoScalingGroupEC2.asg,
       vpc.vpc,
-      securityGroupELB.ec2SecurityGroup
+      securityGroupELB.ec2SecurityGroup,
+      sslCertificate
     );
 
     const s3 = new s3Bucket(this, `${config.projectName}-S3`);
