@@ -5,15 +5,15 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 
 ///////
-//    ___  ___  ____  ___  ___
-//   / _ \/ _ \/ __/ / _ \/ _ )
-//  / , _/ // /\ \  / // / _  |
-// /_/|_/____/___/ /____/____(_)
+// ___  __  _____  ____  ___  ___
+// / _ |/ / / / _ \/ __ \/ _ \/ _ |
+// / __ / /_/ / , _/ /_/ / , _/ __ |
+// /_/ |_\____/_/|_|\____/_/|_/_/ |_|
 //
 ///////
 
-export class rdsInstance extends Construct {
-  public readonly rdsInstance: rds.DatabaseInstance;
+export class auroraCluster extends Construct {
+  public readonly auroraCluster: rds.DatabaseCluster;
 
   constructor(scope: Construct, id: string, vpc: ec2.IVpc) {
     super(scope, id);
@@ -34,31 +34,58 @@ export class rdsInstance extends Construct {
       }
     );
 
-    this.rdsInstance = new rds.DatabaseInstance(this, "WpDatabase", {
-      /*  ========================
-            FOR PRODUCTION LOADS
-       *  ========================
-       * - ENGINE: Aurora MySQL for vertical scaling
-       * - INSTANCE TYPE: m5.large ,
-       * - MULTI-AZ:true
-       * - DELETION PROTECTION: true
-       * - BACKUP-RETENTION: 14 days
-       * - REMOVAL POLICY: Snapshot
-       */
-      databaseName: "wordpress_db",
-      credentials: rds.Credentials.fromSecret(dbCredentialsSecret),
-      engine: rds.DatabaseInstanceEngine.MYSQL,
-      vpc: vpc,
-      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-      instanceType: ec2.InstanceType.of(
-        ec2.InstanceClass.T3,
-        ec2.InstanceSize.MICRO
-      ),
-      storageEncrypted: true,
+    const instanceType = ec2.InstanceType.of(
+      ec2.InstanceClass.T3,
+      ec2.InstanceSize.MEDIUM
+    );
+
+    const engine = rds.DatabaseClusterEngine.auroraMysql({
+      version: rds.AuroraMysqlEngineVersion.VER_3_06_0,
     });
 
-    /*==================================================
+    this.auroraCluster = new rds.DatabaseCluster(this, "WpAuroraCluster", {
+      engine,
+      clusterIdentifier: "WpAuroraCluster",
+      instanceProps: {
+        /* ============================================================================ *
+         * @NOTE: The smallest instance class that is memory optimized for AuroraMySQL  *
+         *        is the db.r4.large for version 2.07.9 that seems like overkill        *
+         * ============================================================================ */
+        vpc,
+        instanceType,
+        vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
+      },
+      storageEncrypted: true,
+      deletionProtection: true,
+      defaultDatabaseName: "wordpress_db",
+      removalPolicy: cdk.RemovalPolicy.SNAPSHOT,
+      credentials: rds.Credentials.fromSecret(dbCredentialsSecret),
+    });
+
+    /*
+      ===================================================
+        RDS MYSQL INITIAL SETTINGS FOR SMALLER PROJECTS   
+      ===================================================
+
+      this.rdsInstance = new rds.DatabaseInstance(this, "WpDatabase", {
+      
+            databaseName: "wordpress_db",
+            credentials: rds.Credentials.fromSecret(dbCredentialsSecret),
+            engine: rds.DatabaseInstanceEngine.MYSQL,
+            vpc: vpc,
+            vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
+            removalPolicy: cdk.RemovalPolicy.SNAPSHOT,
+            instanceType: ec2.InstanceType.of(
+              ec2.InstanceClass.T3,
+              ec2.InstanceSize.MEDIUM
+            ),
+            storageEncrypted: true,
+            deletionProtection: true,
+            backupRetention: cdk.Duration.days(7),
+            // multiAz: true, // Optional: Provides fault tolerance.
+          });
+    
+      ==================================================
             MASTER-READ REPLICA OPTIMIZATION 
       ================================================== 
       const masterInstance = this.rdsInstance;

@@ -5,9 +5,9 @@ import { Construct } from "constructs";
 import {
   s3Bucket,
   customVpc,
-  rdsInstance,
   wpServerASG,
   wpFileSystem,
+  auroraCluster,
   loadBalancerSG,
   // wpServerEC2,
   wpAppLoadBalancer,
@@ -47,7 +47,7 @@ export class WpInfraStack extends cdk.Stack {
       vpc.vpc
     );
 
-    const db = new rdsInstance(this, `${config.projectName}-DB`, vpc.vpc);
+    const db = new auroraCluster(this, `${config.projectName}-DB`, vpc.vpc);
 
     // const wpElasticFileSys = new wpFileSystem(this,`${config.projectName}-EFS`, vpc.vpc);
 
@@ -59,7 +59,8 @@ export class WpInfraStack extends cdk.Stack {
       // db.rdsInstance
       // wpElasticFileSys.fileSystem
     );
-    db.rdsInstance.connections.allowDefaultPortFrom(autoScalingGroupEC2.asg);
+
+    db.auroraCluster.connections.allowDefaultPortFrom(autoScalingGroupEC2.asg);
 
     const appLoadBalancer = new wpAppLoadBalancer(
       this,
