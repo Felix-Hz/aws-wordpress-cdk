@@ -1,4 +1,5 @@
 import * as dotenv from "dotenv";
+import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
@@ -93,8 +94,8 @@ export class wpServerASG extends Construct {
     // const machineImage = new ec2.AmazonLinuxImage({generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2,});
 
     const instanceType = ec2.InstanceType.of(
-      ec2.InstanceClass.T2,
-      ec2.InstanceSize.MICRO
+      ec2.InstanceClass.T3,
+      ec2.InstanceSize.MEDIUM
     );
 
     this.asg = new autoscaling.AutoScalingGroup(this, "WpServerASG", {
@@ -117,7 +118,15 @@ export class wpServerASG extends Construct {
       keyName: keyPairRef.keyPairName,
       autoScalingGroupName: "WpServerASG",
       healthCheck: autoscaling.HealthCheck.ec2(),
+      // @TODO: Change to private subnet and expose only the load balancer.
       vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
+      instanceMonitoring: autoscaling.Monitoring.DETAILED,
+    });
+
+    this.asg.scaleOnCpuUtilization("scaleOutCpu", {
+      // Scale out/in when CPU utilization exceeds 70%.
+      targetUtilizationPercent: 70,
+      cooldown: cdk.Duration.minutes(5),
     });
   }
 }
