@@ -11,9 +11,9 @@ import {
   wpFileSystem,
   auroraCluster,
   loadBalancerSG,
-  // wpServerEC2,
   wpAppLoadBalancer,
   autoScalingGroupSG,
+  bastionScalingGroupSG,
 } from "./constructs";
 
 /* ====================================================== *
@@ -31,6 +31,12 @@ export class WpInfraStack extends cdk.Stack {
      * ============================================= */
 
     const vpc = new customVpc(this, `${config.projectName}-VPC`);
+
+    const securityGroupBastion = new bastionScalingGroupSG(
+      this,
+      `${config.projectName}-SG-BH`,
+      vpc.vpc
+    );
 
     const securityGroupASG = new autoScalingGroupSG(
       this,

@@ -9,12 +9,29 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 //
 ///////
 
+export class bastionScalingGroupSG extends Construct {
+  public readonly ec2SecurityGroup: ec2.SecurityGroup;
+
+  constructor(scope: Construct, id: string, vpc: ec2.IVpc) {
+    super(scope, id);
+    this.ec2SecurityGroup = new ec2.SecurityGroup(this, "WpBastionSecGroup", {
+      vpc: vpc,
+      allowAllOutbound: true,
+    });
+    this.ec2SecurityGroup.addIngressRule(
+      ec2.Peer.anyIpv4(),
+      ec2.Port.tcp(22),
+      "SSH access"
+    );
+  }
+}
+
 export class autoScalingGroupSG extends Construct {
   public readonly ec2SecurityGroup: ec2.SecurityGroup;
 
   constructor(scope: Construct, id: string, vpc: ec2.IVpc) {
     super(scope, id);
-    this.ec2SecurityGroup = new ec2.SecurityGroup(this, "WpSecGroup", {
+    this.ec2SecurityGroup = new ec2.SecurityGroup(this, "WpAsgSecGroup", {
       vpc: vpc,
       allowAllOutbound: true,
     });
@@ -42,7 +59,7 @@ export class loadBalancerSG extends Construct {
 
   constructor(scope: Construct, id: string, vpc: ec2.IVpc) {
     super(scope, id);
-    this.ec2SecurityGroup = new ec2.SecurityGroup(this, "WpSecGroup", {
+    this.ec2SecurityGroup = new ec2.SecurityGroup(this, "WpElbSecGroup", {
       vpc: vpc,
       allowAllOutbound: true,
     });
