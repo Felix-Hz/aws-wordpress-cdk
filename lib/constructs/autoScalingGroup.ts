@@ -1,4 +1,5 @@
 import * as dotenv from "dotenv";
+import { config } from "../config";
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as iam from "aws-cdk-lib/aws-iam";
@@ -31,9 +32,13 @@ export class wpServerASG extends Construct {
   ) {
     super(scope, id);
 
-    // Create KeyPair to SSH into the machine.
-    const keyPairName = "aws-wordpress-cdk";
-    const keyPairRef = new ec2.KeyPair(this, keyPairName);
+    // @NOTE: KeyPair created manually.
+    const keyPairName = "wordpress-asg";
+    const keyPairRef = ec2.KeyPair.fromKeyPairName(
+      this,
+      `${keyPairName}-ref`,
+      keyPairName
+    );
 
     /* ===================== *
      *    IAM SERVER ROLE    *

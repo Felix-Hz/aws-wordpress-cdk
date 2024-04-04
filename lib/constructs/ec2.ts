@@ -1,5 +1,7 @@
-import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
+import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 
 ///////
 //   ____________
@@ -20,23 +22,35 @@ export class wpServerEC2 extends Construct {
   ) {
     super(scope, id);
 
-    // Create KeyPair to SSH into the machine.
-    const keyPairName = "aws-bastion-wordpress-cdk";
-    const keyPairRef = new ec2.KeyPair(this, keyPairName);
+    // @NOTE: KeyPair created manually.
+    const keyPairName = "wordpress-asg-bastion";
+    const keyPairRef = ec2.KeyPair.fromKeyPairName(
+      this,
+      `${keyPairName}-ref`,
+      keyPairName
+    );
+
+    /* ===================== *
+     *    BASTION CONFIG     *
+     *====================== */
+
+    const instanceType = ec2.InstanceType.of(
+      ec2.InstanceClass.T3,
+      ec2.InstanceSize.MICRO
+    );
+
+    const machineImage = new ec2.AmazonLinuxImage({
+      generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2,
+    });
 
     this.ec2Instance = new ec2.Instance(this, "WpBastionHost", {
-      instanceType: ec2.InstanceType.of(
-        ec2.InstanceClass.T3,
-        ec2.InstanceSize.MICRO
-      ),
-      machineImage: new ec2.AmazonLinuxImage({
-        generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2,
-      }),
       vpc: vpc,
-      vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
+      instanceType,
+      machineImage,
+      detailedMonitoring: true,
       securityGroup: securityGroup,
       keyName: keyPairRef.keyPairName,
-      detailedMonitoring: true,
+      vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
     });
 
     this.ec2Instance.addUserData("yum update -y");
