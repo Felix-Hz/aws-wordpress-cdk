@@ -6,6 +6,7 @@ import * as certificatemanager from "aws-cdk-lib/aws-certificatemanager";
 import {
   s3Bucket,
   customVpc,
+  wpServerEC2,
   wpServerASG,
   wpFileSystem,
   auroraCluster,
@@ -18,10 +19,7 @@ import {
 /* ====================================================== *
  *                     @TO-DO LIST                        *
  * ====================================================== *
- * - HTTPS/SSL certificate.
- * - S3 with CDN for heavy media assets.
- * - Mount Elastic File System to the servers.
- * - CloudFront in front of the application load balancer.
+ * - Mount Elastic File System to the servers.            |
  * ====================================================== */
 
 export class WpInfraStack extends cdk.Stack {
@@ -50,6 +48,13 @@ export class WpInfraStack extends cdk.Stack {
       this,
       `${config.projectName}-SSL`,
       `${config.resources.sslCertificateArn}`
+    );
+
+    const bastionHostEc2 = new wpServerEC2(
+      this,
+      `${config.projectName}-BH-EC2`,
+      vpc.vpc,
+      securityGroupBastion.ec2SecurityGroup
     );
 
     const db = new auroraCluster(this, `${config.projectName}-DB`, vpc.vpc);
