@@ -47,7 +47,6 @@ export class wpServerEC2 extends Construct {
       vpc: vpc,
       instanceType,
       machineImage,
-      detailedMonitoring: true,
       securityGroup: securityGroup,
       keyName: keyPairRef.keyPairName,
       vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
