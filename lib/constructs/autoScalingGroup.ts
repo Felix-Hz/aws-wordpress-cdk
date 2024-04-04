@@ -117,7 +117,7 @@ export class wpServerASG extends Construct {
 
     this.asg.scaleOnCpuUtilization("scaleOutCpu", {
       // Scale out/in when CPU utilization exceeds 70%.
-      targetUtilizationPercent: 70,
+      targetUtilizationPercent: 90,
       cooldown: cdk.Duration.minutes(5),
     });
   }

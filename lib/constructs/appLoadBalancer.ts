@@ -3,9 +3,10 @@ import { Construct } from "constructs";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as logs from "aws-cdk-lib/aws-logs";
+import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import * as autoscaling from "aws-cdk-lib/aws-autoscaling";
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
-import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
+import * as certificatemanager from "aws-cdk-lib/aws-certificatemanager";
 
 ///////
 // ___   ___  ___    __   ____  ___   ___    ___
@@ -23,7 +24,8 @@ export class wpAppLoadBalancer extends Construct {
     id: string,
     asg: autoscaling.AutoScalingGroup,
     vpc: ec2.IVpc,
-    customSG: ec2.ISecurityGroup
+    customSG: ec2.ISecurityGroup,
+    sslCertificate: certificatemanager.ICertificate
   ) {
     super(scope, id);
 
@@ -35,12 +37,25 @@ export class wpAppLoadBalancer extends Construct {
       vpc,
       internetFacing: true,
       securityGroup: customSG,
-      // vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
     });
 
-    const listener = this.alb.addListener("HTTP-listener", {
-      port: 80,
+    // const listener = this.alb.addListener("HTTP-listener", {
+    //   port: 80,
+    //   open: true,
+    // });
+
+    const listener = this.alb.addListener("HTTPS-listener", {
+      port: 443,
       open: true,
+      certificates: [sslCertificate],
+    });
+
+    // Enforce HTTPS by redirecting HTTP requests.
+    this.alb.addRedirect({
+      sourceProtocol: elbv2.ApplicationProtocol.HTTP,
+      sourcePort: 80,
+      targetProtocol: elbv2.ApplicationProtocol.HTTPS,
+      targetPort: 443,
     });
 
     const targetGroup = new elbv2.ApplicationTargetGroup(
